@@ -4,11 +4,9 @@ using GLib;
 public class SudokuSolver : Gtk.Application {
 
 private static int MAX_SUM = 1 ^ 2 ^ 3 ^ 4 ^ 5 ^ 6 ^ 7 ^ 8 ^ 9;
-
-    public SudokuSolver() {
+    public SudokuSolver(string runtime_path) {
         Object(application_id: "com.example.SudokuSolver",
                flags: ApplicationFlags.FLAGS_NONE);
-               
     }
 
     protected override void activate() {
@@ -20,6 +18,7 @@ private static int MAX_SUM = 1 ^ 2 ^ 3 ^ 4 ^ 5 ^ 6 ^ 7 ^ 8 ^ 9;
         // Create a Gio.Menu
     var menu = new GLib.Menu();
     menu.append("New", "app.new");
+    menu.append("Load Puzzle", "app.load");
     menu.append("Quit", "app.quit");
 
     // Create a MenuButton
@@ -41,11 +40,18 @@ private static int MAX_SUM = 1 ^ 2 ^ 3 ^ 4 ^ 5 ^ 6 ^ 7 ^ 8 ^ 9;
         entry_grid.row_spacing = 2;
         entry_grid.column_spacing = 2;
 
+        var menu_grid = new Gtk.Grid();
+        menu_grid.row_spacing = 2;
+        menu_grid.column_spacing = 2;
+
 // Create a CSS provider
         var css_provider = new Gtk.CssProvider();
         css_provider.load_from_data((uint8[])"
             .custom-entry {
-                background-color:rgba(96, 183, 218, 0.81); /* Light red background */
+                background-color:rgb(96, 183, 218); /* Light red background */
+            }
+            .random-entry {
+                background-color:rgb(218, 96, 96); /* Light green background */
             }
         ");
 // Apply the CSS provider to the Entry
@@ -67,6 +73,9 @@ Gtk.StyleContext.add_provider_for_display(
                 entry_grid.attach(entry, i, j, 1, 1);
             }
         }
+
+        //Add menu_button to menu_grid
+        menu_grid.attach(menu_button, 9, 1, 1, 1);
 
         var solve_button = new Gtk.Button.with_label("Solve");
         solve_button.clicked.connect(() => {
@@ -135,6 +144,7 @@ Gtk.StyleContext.add_provider_for_display(
                     entry.text = "";
                     entry.set_editable(true);
                     entry.get_style_context().remove_class("custom-entry");
+                    entry.get_style_context().remove_class("random-entry");
                     // Re-enable the solve button
                     solve_button.set_sensitive(true);
                 }
@@ -157,7 +167,55 @@ Gtk.StyleContext.add_provider_for_display(
     });
     add_action(quit_action);
 
-        grid.attach(menu_button, 0, 0, 1, 1);
+    //Load a random puzzle from a file
+    void load_random_puzzle() {
+        // Clear the Sudoku grid
+        clear_sudoku_grid();
+
+        // Open the file
+        File file = File.new_for_path("problems.csv");
+
+        uint8[] contents_bytes;
+        file.load_contents(null, out contents_bytes, null);
+        string contents = (string)(new Bytes(contents_bytes).get_data());
+
+        // Split the contents into lines
+        var lines = contents.split("\n");
+
+        //print the number of lines
+        print("Number of lines: %d\n", lines.length);
+        int random_index = GLib.Random.int_range(0, lines.length);
+        var random_line = lines[random_index];
+        //print the random line
+        print("Random line: %s\n", random_line);
+        var charIndex = 0;
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                var child = entry_grid.get_child_at(j, i);
+                // Cast the child to Gtk.Entry and set its text
+                var entry = child as Gtk.Entry;
+                if (entry != null) {
+                    //read the nth character of the random_line
+                    entry.text = random_line.get_char(charIndex++).to_string();
+                    if (entry.text != "0"){
+                    entry.set_editable(false);
+                    entry.get_style_context().add_class("random-entry");
+                    } else {
+                        entry.text = "";
+                        entry.set_editable(true);
+                        entry.get_style_context().remove_class("random-entry");
+                    }
+                }
+            }
+        }
+    }
+    var load_action = new GLib.SimpleAction("load", null);
+    load_action.activate.connect(() => {
+        load_random_puzzle();
+    });
+    add_action(load_action);
+
+        grid.attach(menu_grid, 0, 0, 1, 1);
         grid.attach(entry_grid, 0, 1, 1, 1);
         grid.attach(solve_button, 0, 2, 1, 1);
 
@@ -167,7 +225,8 @@ Gtk.StyleContext.add_provider_for_display(
     }
 
     public static int main(string[] args) {
-        var app = new SudokuSolver();
+        var app = new SudokuSolver(args[0]);
+        stdout.printf("Runtime path: %s\n", args[0]);
         return app.run(args);
     }
 
