@@ -173,7 +173,7 @@ Gtk.StyleContext.add_provider_for_display(
         clear_sudoku_grid();
 
         // Open the file
-        File file = File.new_for_path("problems.csv");
+        File file = File.new_for_path("res/problems.csv");
 
         uint8[] contents_bytes;
         file.load_contents(null, out contents_bytes, null);

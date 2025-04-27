@@ -1,16 +1,22 @@
 # Compiler and flags
 VALAC = valac
 PKGS = --pkg gtk4 --pkg gio-2.0
-SRC = sudoku.vala
+SRC_FILES = $(SRC)/sudoku.vala
 OUT = sudoku
+BIN = ./bin
+SRC = ./src
+
+# Create bin directory if it doesn't exist
+$(BIN):
+	mkdir -p $(BIN)
 
 # Default target
-all: $(OUT)
+all: $(BIN) $(BIN)/$(OUT)
 
 # Build the executable
-$(OUT): $(SRC)
-	$(VALAC) $(PKGS) -o $(OUT) $(SRC)
+$(BIN)/$(OUT): $(SRC_FILES)
+	$(VALAC) $(PKGS) -o $(BIN)/$(OUT) $(SRC_FILES)
 
 # Clean up generated files
 clean:
-	rm -f $(OUT)
+	rm -rf $(BIN)
